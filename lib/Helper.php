@@ -24,8 +24,17 @@ class Helper {
 	 * @since 0.13.0
 	 */
 	public static function get_image_sizes() {
+		/**
+		 * Filters whether the internal sizes cache should be skipped.
+		 *
+		 * Mainly used for testing.
+		 *
+		 * @since 0.14.8
+		 */
+		$use_sizes_cache = apply_filters( 'timmy/sizes/use_cache', true );
+
 		// Bailout early if cached image configuration is available.
-		if ( self::$sizes ) {
+		if ( self::$sizes && $use_sizes_cache ) {
 			return self::$sizes;
 		}
 
@@ -211,6 +220,27 @@ class Helper {
 		}
 
 		return wp_get_attachment_url( $attachment_id );
+	}
+
+	/**
+	 * Gets cached mime types.
+	 *
+	 * Useful in combination with wp_check_filetype(), where you should pass a second parameter to
+	 * prevent get_allowed_mime_types() from being called too many times.
+	 *
+	 * @since 0.14.6
+	 * @see \wp_check_filetype()
+	 *
+	 * @return string[]|null
+	 */
+	public static function get_mime_types() {
+		static $mime_types = null;
+
+		if ( ! isset( $mime_types ) ) {
+			$mime_types = wp_get_mime_types();
+		}
+
+		return $mime_types;
 	}
 
 	/**

@@ -25,12 +25,21 @@ class Responsive_Content_Images {
 	 *                                   to use the 'content' size from your image configuration
 	 *                                   instead of the large size. If you use a string, all sizes
 	 *                                   will be mapped to the size you pass in the string.
+	 *     @type array $content_filters  An array of filters that are added where reponsive content
+	 *                                   image filtering is applied. By default, it’s only applied
+	 *                                   to `the_content`. You can add other filters here, like
+	 *                                   `acf_the_content` or choose to not add `the_content` as a
+	 *                                   filter. If you want `the_content` to work, you need to add
+	 *                                   it yourself when defining this argument.
 	 * }
 	 */
-	public function __construct( $args = array() ) {
-		$this->args = wp_parse_args( $args, array(
-			'map_sizes' => array(),
-		) );
+	public function __construct( $args = [] ) {
+		$this->args = wp_parse_args( $args, [
+			'map_sizes'       => [],
+			'content_filters' => [
+				'the_content' => 10,
+			],
+		] );
 
 		$this->init();
 	}
@@ -53,8 +62,10 @@ class Responsive_Content_Images {
 			remove_filter( 'the_content', 'wp_make_content_images_responsive' );
 		}
 
-		// Add our own custom filter.
-		add_filter( 'the_content', array( $this, 'make_content_images_responsive' ) );
+		// Add content filters.
+		foreach ( $this->args['content_filters'] as $filter => $priority ) {
+			add_filter( $filter, [ $this, 'make_content_images_responsive' ], $priority );
+		}
 
 		// Remove width attribute from <figure> tag.
 		add_filter( 'img_caption_shortcode_width', array( $this, 'fix_figure_width' ) );
@@ -86,7 +97,7 @@ class Responsive_Content_Images {
 		 * - The part after "size-" to catch the name of the image size that’s used.
 		 */
 		if ( preg_match_all(
-			'/<figure class="([^"]*wp-block-image size-([^\s]+)\s?[^"]*)"[^>]*><img [^>]+>.*<\/figure>/',
+			'/<figure class="([^"]*wp-block-image.*?size-([\w_\-\/.]+).*?)".*?><img [^>]+>.*<\/figure>/',
 			$content,
 			$block_images
 		) ) {
